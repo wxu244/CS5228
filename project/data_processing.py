@@ -5,14 +5,13 @@ import pandas as pd
 
 from project.config import FLAT_MODEL_MAPPING
 
-
 def read_files():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    print(base_dir)
+    data_dir = os.path.join(base_dir, "data")
 
-    train_path = os.path.join(base_dir, "train.csv")
-    test_path = os.path.join(base_dir, "test.csv")
-    aux_dir = os.path.join(base_dir, "auxiliary-data")
+    train_path = os.path.join(data_dir, "train.csv")
+    test_path = os.path.join(data_dir, "test.csv")
+    aux_dir = os.path.join(data_dir, "auxiliary-data")
 
     train_df = pd.read_csv(train_path)
     test_df = pd.read_csv(test_path)
