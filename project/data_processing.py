@@ -35,7 +35,7 @@ def process_flat_type(df: pd.DataFrame) -> pd.DataFrame:
     df['FLAT_TYPE'] = df['FLAT_TYPE'].str.replace('-', '_', regex=False)
     df['FLAT_TYPE'] = df['FLAT_TYPE'].str.replace(' ', '_', regex=False)
     df['FLAT_TYPE_ORIGINAL'] = df['FLAT_TYPE'] # 保留原始列用于绘图
-    df = pd.get_dummies(df, columns=['FLAT_TYPE'])
+    df = pd.get_dummies(df, columns=['FLAT_TYPE'], dtype=int)
     return df
 
 def calculate_floor(df: pd.DataFrame) -> pd.DataFrame:
