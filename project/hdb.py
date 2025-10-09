@@ -7,8 +7,8 @@ def main():
     train_df = train_test_process(train_df)
     test_df = train_test_process(test_df)
     plot_figures(train_df)
-    train_df.to_csv('train_after_process.csv', index=False)
-    test_df.to_csv('test_after_process.csv', index=False)
+    train_df.to_csv('train_processed.csv', index=False)
+    test_df.to_csv('test_processed.csv', index=False)
     return
 
 if __name__ == "__main__":
