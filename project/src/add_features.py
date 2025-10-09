@@ -82,14 +82,15 @@ def main(train_path: Path ,
         "mall": pd.read_csv(aux / "sg-shopping-malls.csv"),
         # HDB 坐标
         "block": pd.read_csv(aux / "sg-hdb-block-details.csv")[
-            ["TOWN", "BLOCK", "LATITUDE", "LONGITUDE", "MAX_FLOOR"]
+            ["TOWN", "BLOCK", "LATITUDE", "ADDRESS", "LONGITUDE", "MAX_FLOOR"]
         ],
     }
 
     # 2. 合并坐标 & MAX_FLOOR —— 只 pop 一次
     block_coords = landmarks.pop("block")
-    train = train.merge(block_coords, on=["TOWN", "BLOCK"], how="left")
-    test = test.merge(block_coords, on=["TOWN", "BLOCK"], how="left")
+    block_coords.rename(columns={'ADDRESS': 'STREET'}, inplace=True)
+    train = train.merge(block_coords, on=['TOWN', 'BLOCK', 'STREET'], how='left')
+    test = test.merge(block_coords, on=['TOWN', 'BLOCK', 'STREET'], how='left')
 
     # 3. 加空间特征
     for prefix, ref in landmarks.items():
