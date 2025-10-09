@@ -21,14 +21,14 @@ def main():
     output_dir = Path("../data/output")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    add_features.main(
-        train_path=data_dir / "train_processed.csv",
-        test_path=data_dir / "test_processed.csv",
-        aux_dir=data_dir / "aux",
-        out_train=output_dir / "train_with_all_features.csv",
-        out_test=output_dir / "test_with_all_features.csv",
-        radius_km=1
-    )
+    # add_features.main(
+    #     train_path=data_dir / "train_processed.csv",
+    #     test_path=data_dir / "test_processed.csv",
+    #     aux_dir=data_dir / "aux",
+    #     out_train=output_dir / "train_with_all_features.csv",
+    #     out_test=output_dir / "test_with_all_features.csv",
+    #     radius_km=1
+    # )
 
     model_train.main(output_dir)
 

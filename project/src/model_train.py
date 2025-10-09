@@ -7,11 +7,14 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage.data import data_dir
 from sklearn.linear_model import Ridge
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+
+from xgboost import XGBRegressor
 
 def main(data_dir: Path):
     # -------------------------------
@@ -124,15 +127,61 @@ def main(data_dir: Path):
     plt.close()
 
     # ============================================================
+    # Model 3: XGBoost Regressor
+    # ============================================================
+    xgb_model = XGBRegressor(
+        n_estimators=500,
+        learning_rate=0.05,
+        max_depth=8,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+        n_jobs=-1,
+    )
+    xgb_model.fit(X_train, y_train,
+                  eval_set=[(X_val, y_val)],
+                  verbose=False)
+
+    xgb_preds = xgb_model.predict(X_val)
+    xgb_r2 = r2_score(y_val, xgb_preds)
+    xgb_mae = mean_absolute_error(y_val, xgb_preds)
+    xgb_rmse = np.sqrt(mean_squared_error(y_val, xgb_preds))
+
+    print("===== XGBoost Evaluation =====")
+    print(f"R²:   {xgb_r2:.4f}")
+    print(f"MAE:  {xgb_mae:.2f}")
+    print(f"RMSE: {xgb_rmse:.2f}\n")
+
+
+
+    # ============================================================
     # Save Results
     # ============================================================
     results = pd.DataFrame({
-        "Model": ["Ridge Regression", "Random Forest"],
-        "R²": [ridge_r2, rf_r2],
-        "MAE": [ridge_mae, rf_mae],
-        "RMSE": [ridge_rmse, rf_rmse]
+        "Model": ["Ridge Regression", "Random Forest", "XGBoost"],
+        "R²": [ridge_r2, rf_r2, xgb_r2],
+        "MAE": [ridge_mae, rf_mae, xgb_mae],
+        "RMSE": [ridge_rmse, rf_rmse, xgb_rmse]
     })
     results.to_csv(data_dir / "model_evaluation_results.csv", index=False)
+    print("Model comparison saved to model_evaluation_results.csv\n")
 
-    print("Model training and validation complete.")
-    print("Results saved to 'model_evaluation_results.csv'.")
+
+    # ============================================================
+    # Final Prediction with Best Model (XGBoost)
+    # ============================================================
+    xgb_model.fit(X, y)
+
+    X_test = test_df[X.columns]
+    X_test = X_test.fillna(train_df.median(numeric_only=True))
+
+    test_preds = xgb_model.predict(X_test)
+
+    submission = pd.DataFrame({
+        "Id": test_df.index,
+        "Predicted": test_preds
+    })
+    output_file = data_dir / "submission.csv"
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    submission.to_csv(output_file, index=False)
+    print(f"✅ Submission saved to {output_file}")
