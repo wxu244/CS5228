@@ -2,10 +2,9 @@ from pathlib import Path
 
 from openpyxl.styles.builtins import output
 
-from project.src.data_processing import read_files, train_test_process
-from project.src.visualization import plot_figures
 
-from project.src import add_features, model_train
+
+import add_features, model_train
 
 
 def main():
@@ -24,7 +23,7 @@ def main():
     # add_features.main(
     #     train_path=data_dir / "train_processed.csv",
     #     test_path=data_dir / "test_processed.csv",
-    #     aux_dir=data_dir / "aux",
+    #     aux_dir=data_dir / "auxiliary-data",
     #     out_train=output_dir / "train_with_all_features.csv",
     #     out_test=output_dir / "test_with_all_features.csv",
     #     radius_km=1
