@@ -1,7 +1,9 @@
 import os
 from glob import glob
 
+import numpy as np
 import pandas as pd
+from distributed.utils_test import throws
 from sklearn.preprocessing import LabelEncoder
 
 from pathlib import Path
@@ -40,7 +42,9 @@ def process_flat_type(df: pd.DataFrame) -> pd.DataFrame:
     df['FLAT_TYPE'] = df['FLAT_TYPE'].str.replace(' ', '_', regex=False)
     df['FLAT_TYPE_ORIGINAL'] = df['FLAT_TYPE']
     # 也可以用label encoding
-    df = pd.get_dummies(df, columns=['FLAT_TYPE'], dtype=int)
+    # df = pd.get_dummies(df, columns=['FLAT_TYPE'], dtype=int)
+    label_encoder = LabelEncoder()
+    df['FLAT_TYPE'] = label_encoder.fit_transform(df['FLAT_TYPE'])
     return df
 
 
@@ -53,10 +57,10 @@ def calculate_floor(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def engineer_flat_model_group(df: pd.DataFrame) -> pd.DataFrame:
+def engineer_flat_model_group(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # df['FLAT_MODEL_GROUPED'] = df['FLAT_MODEL'].map(FLAT_MODEL_MAPPING).fillna('Other')
 
-    # 按均值分类的
+    # 0:按均值分类的(data leak)
     # if df.get('RESALE_PRICE') is not None:
     #     group_stats = df.groupby('FLAT_MODEL_GROUPED').agg(
     #         count=('RESALE_PRICE', 'size'),
@@ -65,10 +69,105 @@ def engineer_flat_model_group(df: pd.DataFrame) -> pd.DataFrame:
     #         mean_area=('FLOOR_AREA_SQM', 'mean')
     #     ).sort_values('mean_price')
     #     print(group_stats)
-
-    le = LabelEncoder()
-    df['FLAT_MODEL_ENCODED'] = le.fit_transform(df['FLAT_MODEL'])
     # df['FLAT_MODEL_ENCODED'] = le.fit_transform(df['FLAT_MODEL_GROUPED'])
+
+    # 1:label encode
+    # le = LabelEncoder()
+    # df['FLAT_MODEL_ENCODED'] = le.fit_transform(df['FLAT_MODEL'])
+
+    # 2:target encode
+    # 如果存在 RESALE_PRICE 列，对 RESALE_PRICE 进行对数转换
+    if 'RESALE_PRICE' in train_df.columns:
+        train_df['LOG_RESALE_PRICE'] = np.log1p(train_df['RESALE_PRICE'])
+
+    # 使用目标编码
+    target_column = 'LOG_RESALE_PRICE' if 'LOG_RESALE_PRICE' in train_df.columns else 'RESALE_PRICE'
+    target_mean = train_df.groupby('FLAT_MODEL')[target_column].transform('mean')
+
+    # 将目标编码的结果保存到新列
+    train_df['FLAT_MODEL_ENCODED'] = target_mean
+
+    # 将目标编码的结果保存到字典中
+    target_encoding_map = train_df.groupby('FLAT_MODEL')['FLAT_MODEL_ENCODED'].first().to_dict()
+
+    # 应用目标编码到测试集
+    test_df['FLAT_MODEL_ENCODED'] = test_df['FLAT_MODEL'].map(target_encoding_map)
+
+    # 处理测试集中未出现在训练集中的类别
+    unknown_value = train_df['FLAT_MODEL_ENCODED'].mean()  # 使用训练集的平均值作为未知类别的默认值
+    test_df['FLAT_MODEL_ENCODED'].fillna(unknown_value, inplace=True)
+
+    # 如果需要，可以将对数转换后的列删除
+    if 'LOG_RESALE_PRICE' in train_df.columns:
+        train_df.drop(columns=['LOG_RESALE_PRICE'], inplace=True)
+
+
+    return train_df, test_df
+
+def engineer_flat_model_group_3(df: pd.DataFrame) -> pd.DataFrame:
+    structure_map = {
+        '2-room': 'flat',
+        'standard': 'flat',
+        'simplified': 'flat',
+        'new generation': 'flat',
+        'model a': 'flat',
+        'model a2': 'flat',
+        'improved': 'flat',
+        'apartment': 'flat',
+        'type s1': 'flat',
+        'type s2': 'flat',
+        'dbss': 'flat',
+        'premium apartment': 'flat',
+
+        'maisonette': 'maisonette',
+        'model a maisonette': 'maisonette',
+        'improved maisonette': 'maisonette',
+        'premium maisonette': 'maisonette',
+        'premium apartment loft': 'maisonette',
+
+        'multi generation': 'special',
+        '3gen': 'special',
+        'adjoined flat': 'special',
+        'terrace': 'special'
+    }
+
+    quality_map = {
+        '2-room': 'basic',
+        'standard': 'basic',
+        'simplified': 'basic',
+        'new generation': 'basic',
+
+        'model a': 'improved',
+        'model a2': 'improved',
+        'improved': 'improved',
+        'apartment': 'improved',
+        'type s1': 'improved',
+        'type s2': 'improved',
+        'maisonette': 'improved',
+        'model a maisonette': 'improved',
+        'improved maisonette': 'improved',
+        'multi generation': 'improved',
+
+        'premium apartment': 'premium',
+        'premium apartment loft': 'premium',
+        'premium maisonette': 'premium',
+        'dbss': 'premium',
+        '3gen': 'premium',
+        'adjoined flat': 'premium',
+        'terrace': 'premium'
+    }
+
+    # 人为划分特征并进行LabelEncoder编码
+    le_structure = LabelEncoder()
+    le_quality = LabelEncoder()
+
+    # 对训练集进行处理
+    df['structure_type'] = df['FLAT_MODEL'].str.lower().map(structure_map)
+    df['quality_level'] = df['FLAT_MODEL'].str.lower().map(quality_map)
+    df['structure_type_encoded'] = le_structure.fit_transform(df['structure_type'])
+    df['quality_level_encoded'] = le_quality.fit_transform(df['quality_level'])
+
+
     return df
 
 
@@ -83,13 +182,28 @@ def clean_and_normalize_text(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def train_test_process(df: pd.DataFrame) -> pd.DataFrame:
-    df = extract_date_features(df)
-    df = clean_and_normalize_text(df)
-    df = process_flat_type(df)
-    df = calculate_floor(df)
-    df = engineer_flat_model_group(df)
-    df = calculate_age(df)
+def train_test_process(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    train_df = extract_date_features(train_df)
+    test_df = extract_date_features(test_df)
 
-    df = df.drop(columns=['ECO_CATEGORY'])
-    return df
+    train_df = clean_and_normalize_text(train_df)
+    test_df = clean_and_normalize_text(test_df)
+
+    train_df = process_flat_type(train_df)
+    test_df = process_flat_type(test_df)
+
+    train_df = calculate_floor(train_df)
+    test_df = calculate_floor(test_df)
+
+    train_df, test_df = engineer_flat_model_group(train_df, test_df)
+
+    # train_df = engineer_flat_model_group_3(train_df)
+    # test_df = engineer_flat_model_group_3(test_df)
+
+    train_df = calculate_age(train_df)
+    test_df = calculate_age(test_df)
+
+    train_df = train_df.drop(columns=['ECO_CATEGORY'], errors='ignore')
+    test_df = test_df.drop(columns=['ECO_CATEGORY'], errors='ignore')
+
+    return train_df, test_df

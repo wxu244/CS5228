@@ -36,7 +36,7 @@ def main(data_dir: Path):
     drop_candidates = []
 
     drop_candidates += [col for col in train_df.columns if col.upper() in [
-        "FLAT_TYPE_ORIGINAL", "FLAT_MODEL", "BLOCK", "TOWN", "STREET", "MONTH_NUM", "FLOOR_RANGE"
+        "FLAT_TYPE_ORIGINAL", "FLAT_MODEL", "BLOCK", "TOWN", "STREET", "MONTH_NUM", "FLOOR_RANGE", "STRUCTURE_TYPE", "QUALITY_LEVEL"
     ]]
 
 
@@ -116,15 +116,15 @@ def main(data_dir: Path):
     # print(f"MAE:  {rf_mae:.2f}")
     # print(f"RMSE: {rf_rmse:.2f}\n")
 
-    rf_importance = pd.Series(rf_model.feature_importances_, index=X.columns).sort_values(ascending=False)
-    plt.figure(figsize=(10, 6))
-    rf_importance.head(20).plot(kind='barh', color='seagreen')
-    plt.gca().invert_yaxis()
-    plt.title("Top 20 Feature Importance - Random Forest")
-    plt.xlabel("Importance Score")
-    plt.tight_layout()
-    plt.savefig(data_dir / "rf_feature_importance.png")
-    plt.close()
+    # rf_importance = pd.Series(rf_model.feature_importances_, index=X.columns).sort_values(ascending=False)
+    # plt.figure(figsize=(10, 6))
+    # rf_importance.head(20).plot(kind='barh', color='seagreen')
+    # plt.gca().invert_yaxis()
+    # plt.title("Top 20 Feature Importance - Random Forest")
+    # plt.xlabel("Importance Score")
+    # plt.tight_layout()
+    # plt.savefig(data_dir / "rf_feature_importance.png")
+    # plt.close()
 
     # ============================================================
     # Model 3: XGBoost Regressor
@@ -172,10 +172,14 @@ def main(data_dir: Path):
     # Save Results
     # ============================================================
     results = pd.DataFrame({
-        "Model": ["Ridge Regression", "Random Forest", "XGBoost"],
-        "R²": [ridge_r2, rf_r2, xgb_r2],
-        "MAE": [ridge_mae, rf_mae, xgb_mae],
-        "RMSE": [ridge_rmse, rf_rmse, xgb_rmse]
+        # "Model": ["Ridge Regression", "Random Forest", "XGBoost"],
+        # "R²": [ridge_r2, rf_r2, xgb_r2],
+        # "MAE": [ridge_mae, rf_mae, xgb_mae],
+        # "RMSE": [ridge_rmse, rf_rmse, xgb_rmse]
+        "Model": ["XGBoost"],
+        "R²": [ xgb_r2 ],
+        "MAE": [ xgb_mae ],
+        "RMSE": [ xgb_rmse ]
     })
     results.to_csv(data_dir / "model_evaluation_results.csv", index=False)
     print("Model comparison saved to model_evaluation_results.csv\n")
