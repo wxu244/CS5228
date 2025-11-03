@@ -71,50 +71,50 @@ def main(data_dir: Path):
     # ============================================================
     # Model 1: Ridge Regression
     # ============================================================
-    ridge_model = Ridge(alpha=1.0, random_state=42)
-    ridge_model.fit(X_train_scaled, y_train)
+    # ridge_model = Ridge(alpha=1.0, random_state=42)
+    # ridge_model.fit(X_train_scaled, y_train)
 
-    ridge_preds = ridge_model.predict(X_val_scaled)
-    ridge_r2 = r2_score(y_val, ridge_preds)
-    ridge_mae = mean_absolute_error(y_val, ridge_preds)
-    ridge_rmse = np.sqrt(mean_squared_error(y_val, ridge_preds))
+    # ridge_preds = ridge_model.predict(X_val_scaled)
+    # ridge_r2 = r2_score(y_val, ridge_preds)
+    # ridge_mae = mean_absolute_error(y_val, ridge_preds)
+    # ridge_rmse = np.sqrt(mean_squared_error(y_val, ridge_preds))
 
-    print("===== Ridge Regression Evaluation (Train only) =====")
-    print(f"R²:   {ridge_r2:.4f}")
-    print(f"MAE:  {ridge_mae:.2f}")
-    print(f"RMSE: {ridge_rmse:.2f}\n")
+    # print("===== Ridge Regression Evaluation (Train only) =====")
+    # print(f"R²:   {ridge_r2:.4f}")
+    # print(f"MAE:  {ridge_mae:.2f}")
+    # print(f"RMSE: {ridge_rmse:.2f}\n")
 
-    # Feature importance
-    ridge_importance = pd.Series(np.abs(ridge_model.coef_), index=X.columns).sort_values(ascending=False)
-    plt.figure(figsize=(10, 6))
-    ridge_importance.head(20).plot(kind='barh', color='skyblue')
-    plt.gca().invert_yaxis()
-    plt.title("Top 20 Feature Importance - Ridge Regression")
-    plt.xlabel("Coefficient Magnitude")
-    plt.tight_layout()
-    plt.savefig(data_dir / "ridge_feature_importance.png")
-    plt.close()
+    # # Feature importance
+    # ridge_importance = pd.Series(np.abs(ridge_model.coef_), index=X.columns).sort_values(ascending=False)
+    # plt.figure(figsize=(10, 6))
+    # ridge_importance.head(20).plot(kind='barh', color='skyblue')
+    # plt.gca().invert_yaxis()
+    # plt.title("Top 20 Feature Importance - Ridge Regression")
+    # plt.xlabel("Coefficient Magnitude")
+    # plt.tight_layout()
+    # plt.savefig(data_dir / "ridge_feature_importance.png")
+    # plt.close()
 
     # ============================================================
     # Model 2: Random Forest Regressor
     # ============================================================
-    rf_model = RandomForestRegressor(
-        n_estimators=200,
-        max_depth=10,
-        random_state=42,
-        n_jobs=-1
-    )
-    rf_model.fit(X_train, y_train)
-    rf_preds = rf_model.predict(X_val)
+    # rf_model = RandomForestRegressor(
+    #     n_estimators=200,
+    #     max_depth=10,
+    #     random_state=42,
+    #     n_jobs=-1
+    # )
+    # rf_model.fit(X_train, y_train)
+    # rf_preds = rf_model.predict(X_val)
 
-    rf_r2 = r2_score(y_val, rf_preds)
-    rf_mae = mean_absolute_error(y_val, rf_preds)
-    rf_rmse = np.sqrt(mean_squared_error(y_val, rf_preds))
+    # rf_r2 = r2_score(y_val, rf_preds)
+    # rf_mae = mean_absolute_error(y_val, rf_preds)
+    # rf_rmse = np.sqrt(mean_squared_error(y_val, rf_preds))
 
-    print("===== Random Forest Evaluation (Train only) =====")
-    print(f"R²:   {rf_r2:.4f}")
-    print(f"MAE:  {rf_mae:.2f}")
-    print(f"RMSE: {rf_rmse:.2f}\n")
+    # print("===== Random Forest Evaluation (Train only) =====")
+    # print(f"R²:   {rf_r2:.4f}")
+    # print(f"MAE:  {rf_mae:.2f}")
+    # print(f"RMSE: {rf_rmse:.2f}\n")
 
     rf_importance = pd.Series(rf_model.feature_importances_, index=X.columns).sort_values(ascending=False)
     plt.figure(figsize=(10, 6))
