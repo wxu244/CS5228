@@ -152,6 +152,20 @@ def main(data_dir: Path):
     print(f"MAE:  {xgb_mae:.2f}")
     print(f"RMSE: {xgb_rmse:.2f}\n")
 
+    xgb_importance = (
+        pd.Series(xgb_model.feature_importances_, index=X.columns)
+        .sort_values(ascending=False)
+    )
+
+    plt.figure(figsize=(10, 6))
+    xgb_importance.head(20).plot(kind='barh', color='coral')
+    plt.gca().invert_yaxis()
+    plt.title("Top 20 Feature Importance – XGBoost (gain)")
+    plt.xlabel("Importance (gain)")
+    plt.tight_layout()
+    plt.savefig(data_dir / "xgb_feature_importance.png")
+    plt.close()
+
 
 
     # ============================================================
