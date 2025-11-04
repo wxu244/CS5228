@@ -40,7 +40,7 @@ def rmse_expm1(y_log_true, y_log_pred):
 
 def load_prepare_data(data_dir: Path):
     """Loads and prepares X, y for modeling."""
-    print("📂 Loading data...")
+    print(" Loading data...")
     train_path = data_dir / "train_with_all_features.csv"
     train_df = pd.read_csv(train_path)
     target_col = "RESALE_PRICE"
@@ -64,14 +64,14 @@ def load_prepare_data(data_dir: Path):
 def main():
     data_dir = Path("data/test")  
 
-    # 1. 加载数据
+    # 1. Load data
     X, y = load_prepare_data(data_dir)
 
-    # 2. 目标变量 log 变换
+    # 2. Apply log transformation to the target variable
     y_log = np.log1p(y)
-    print(f"✅ Data loaded. X shape: {X.shape}, y_log shape: {y_log.shape}")
+    print(f"Data loaded. X shape: {X.shape}, y_log shape: {y_log.shape}")
 
-    # 3. 构建 Pipeline
+    # 3. Build the preprocessing and modeling Pipeline
     pipeline = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('xgb', XGBRegressor(
@@ -83,7 +83,7 @@ def main():
         ))
     ])
 
-    # 4. 定义超参数搜索空间
+    # 4. Define the hyperparameter search space
     param_dist = {
         'xgb__n_estimators': randint(400, 1000),
         'xgb__learning_rate': uniform(0.01, 0.09),
@@ -92,7 +92,7 @@ def main():
         'xgb__colsample_bytree': uniform(0.7, 0.3)
     }
 
-    # 5. 定义交叉验证与评估指标
+    # 5. Define Cross-Validation and Scorers
     kfold = KFold(n_splits=10, shuffle=True, random_state=42)
 
     scorers = {
@@ -101,17 +101,17 @@ def main():
         "rmse_original": make_scorer(rmse_expm1, greater_is_better=False),
     }
 
-    # 6. 使用 RandomizedSearchCV 进行超参数调优
+    # 6. Perform hyperparameter tuning using RandomizedSearchCV
     print("\n" + "="*70)
-    print("🎯 Starting Hyperparameter Tuning (RandomizedSearchCV)...")
+    print("Starting Hyperparameter Tuning (RandomizedSearchCV)...")
     print("="*70)
 
     random_search = RandomizedSearchCV(
         estimator=pipeline,
         param_distributions=param_dist,
-        n_iter=50,       
-        cv=5,           
-        scoring=scorers["rmse_original"],  
+        n_iter=50,       # 50 iterations for tuning
+        cv=5,            # Use 5-fold CV during tuning
+        scoring=scorers["rmse_original"],  # Optimize based on original-scale RMSE
         n_jobs=-1,
         random_state=42,
         verbose=1
@@ -119,21 +119,21 @@ def main():
 
     random_search.fit(X, y_log)
 
-    # 7. 输出最佳参数与性能
+    # 7. Print best parameters and performance
     print("\n" + "="*70)
-    print("🏆 Hyperparameter Tuning Complete")
+    print("Hyperparameter Tuning Complete")
     print("="*70)
     print("Best parameters found:")
     for k, v in random_search.best_params_.items():
         print(f"  {k}: {v}")
     
-    # 检查 best_score_ 是否为负值
+    # Handle negative score from 'make_scorer' if 'greater_is_better=False'
     best_rmse_score = -random_search.best_score_ if random_search.best_score_ < 0 else random_search.best_score_
     print(f"\nBest CV score (Original-scale RMSE): {best_rmse_score:.2f}")
 
     best_model_pipeline = random_search.best_estimator_
 
-    # 8. 使用最佳模型进行最终 10-Fold 评估
+    # 8. Perform final 10-Fold evaluation with the best model
     print("\n" + "="*70)
     print("🔍 Final Model Evaluation (10-Fold CV on Original Price Scale)")
     print("="*70)
@@ -146,8 +146,8 @@ def main():
     cv_rmse = cross_val_score(best_model_pipeline, X, y_log, cv=final_kfold, scoring=scorers["rmse_original"], n_jobs=-1)
 
     mean_r2 = np.mean(cv_r2)
-    mean_mae = -np.mean(cv_mae)   # 转换为正值
-    mean_rmse = -np.mean(cv_rmse) # 转换为正值
+    mean_mae = -np.mean(cv_mae)   # Convert back to positive
+    mean_rmse = -np.mean(cv_rmse) # Convert back to positive
 
     print(f"Mean R²:    {mean_r2:.4f} (Std: {np.std(cv_r2):.4f})")
     print(f"Mean MAE:   {mean_mae:.2f} (Std: {np.std(-cv_mae):.2f})")
@@ -156,43 +156,43 @@ def main():
 
 
     # ============================================================
-    # 9. 最终预测与提交
+    # 9. Final Prediction and Submission
     # ============================================================
     print("\n" + "="*70)
-    print("🚀 Generating Final Submission File...")
+    print("Generating Final Submission File...")
     print("="*70)
 
-    # 9.1. 在 *所有* 训练数据上重新训练最佳模型
+    # 9.1. Re-train the best model on the ENTIRE training dataset
     print("Step 9.1: Re-training best model on the ENTIRE training dataset...")
     best_model_pipeline.fit(X, y_log)
     print("Done.")
 
-    # 9.2. 加载并处理测试数据
+    # 9.2. Load and process the test data
     print("Step 9.2: Loading and processing test data...")
     test_path = data_dir / "test_with_all_features.csv"
     test_df = pd.read_csv(test_path)
     
-    # 应用与 'load_prepare_data' 中完全相同的特征选择
+    # Apply the exact same feature selection as in 'load_prepare_data'
     drop_candidates = [
         "FLAT_TYPE_ORIGINAL", "FLAT_MODEL", "BLOCK", "TOWN", "STREET", "FLOOR_RANGE"
     ]
     drop_candidates = [c for c in drop_candidates if c in test_df.columns]
     X_test_raw = test_df.drop(columns=drop_candidates, errors="ignore")
     
-    # 确保 X_test 的列顺序与 X_train 完全一致
+    # CRITICAL: Ensure X_test column order matches X_train (X)
     X_test = X_test_raw[X.columns]
     print(f"Test data prepared. Shape: {X_test.shape}")
 
-    # 9.3. 生成预测
-    # Pipeline 会自动处理 X_test 上的缺失值填充
+    # 9.3. Generate predictions
+    # The pipeline will automatically handle missing value imputation on X_test
     print("Step 9.3: Generating log-scale predictions...")
     log_predictions = best_model_pipeline.predict(X_test)
     
-    # 9.4. 将预测转换回原始价格尺度
+    # 9.4. Convert predictions back to the original price scale (expm1)
     print("Step 9.4: Converting predictions back to original price scale (expm1)...")
     final_predictions = np.expm1(log_predictions)
 
-    # 9.5. 保存提交文件
+    # 9.5. Save the submission file
     submission = pd.DataFrame({
         "Id": test_df.index,
         "Predicted": final_predictions
@@ -201,7 +201,7 @@ def main():
     submission.to_csv(submission_path, index=False)
     
     print("\n" + "="*70)
-    print(f"✅ Submission file saved to: {submission_path}")
+    print(f"Submission file saved to: {submission_path}")
     print("===== Experiment Complete =====")
 
 
