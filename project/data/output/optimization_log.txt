@@ -1,0 +1,46 @@
+===== SCRIPT EXECUTION STARTED =====
+Console output is being saved to: ../data/test/optimization_log.txt
+
+📂 Loading data...
+✅ Data loaded. X shape: (162691, 22), y_log shape: (162691,)
+
+======================================================================
+🎯 Starting Hyperparameter Tuning (RandomizedSearchCV)...
+======================================================================
+Fitting 5 folds for each of 50 candidates, totalling 250 fits
+
+======================================================================
+🏆 Hyperparameter Tuning Complete
+======================================================================
+Best parameters found:
+  xgb__colsample_bytree: 0.8855158027999261
+  xgb__learning_rate: 0.044421579214044646
+  xgb__max_depth: 9
+  xgb__n_estimators: 904
+  xgb__subsample: 0.7139351238159992
+
+Best CV score (Original-scale RMSE): 25500.11
+
+======================================================================
+🔍 Final Model Evaluation (10-Fold CV on Original Price Scale)
+======================================================================
+Mean R²:    0.9808 (Std: 0.0005)
+Mean MAE:   17930.14 (Std: 148.71)
+Mean RMSE:  25356.77 (Std: 327.43)
+======================================================================
+
+======================================================================
+🚀 Generating Final Submission File...
+======================================================================
+Step 9.1: Re-training best model on the ENTIRE training dataset...
+Done.
+Step 9.2: Loading and processing test data...
+Test data prepared. Shape: (50000, 22)
+Step 9.3: Generating log-scale predictions...
+Step 9.4: Converting predictions back to original price scale (expm1)...
+
+======================================================================
+✅ Submission file saved to: ../data/test/submission_xgboost_optimized.csv
+===== Experiment Complete =====
+
+===== SCRIPT EXECUTION FINISHED SUCCESSFULLY =====
