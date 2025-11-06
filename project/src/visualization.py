@@ -36,7 +36,7 @@ def plot_categorical_counts(df: pd.DataFrame):
     for col in CATEGORICAL_FEATURES:
         plt.figure(figsize=(12, 6))
 
-        # 筛选出最常见的 N 个类别
+        # Filter for the top N most common categories
         top_categories = df[col].value_counts().nlargest(TOP_N_CATEGORIES).index
         df_filtered = df[df[col].isin(top_categories)]
 
@@ -65,26 +65,26 @@ def plot_categorical_vs_numeric(
     rotate_xticks: bool = False,
     figsize=(14,6),
     log_y: bool = False,
-    sample_frac: float = None     # 若数据量巨大, 可按比例随机采样
+    sample_frac: float = None     # If the dataset is very large, can sample randomly by fraction
 ):
     """
-    常用的类别 vs 数值对比（箱线图/小提琴图 + 均值线/条形）
-    - top_n: 若为 None 则使用 config 中 TOP_N_CATEGORIES；若为整数则显示该 top n 类别，其他合并为 'Other'
-    - agg: 用于条形图聚合函数
-    - sample_frac: 若提供, 先随机抽样（以提升绘图速度）
+    Commonly used categorical vs numerical comparison (Boxplot/Violinplot + Mean/Median bar)
+    - top_n: If None, use TOP_N_CATEGORIES from config; if integer, show top n categories and merge others into 'Other'
+    - agg: Aggregation function for the bar plot
+    - sample_frac: If provided, sample randomly first (to improve plotting speed)
     """
     if sample_frac is not None and 0 < sample_frac < 1:
         df = df.sample(frac=sample_frac, random_state=42)
 
     top_n = TOP_N_CATEGORIES if top_n is None else top_n
 
-    # 如果类别太多，只保留 top_n（其余标为 Other）
+    # If there are too many categories, keep only top_n (label others as 'Other')
     vc = df[cat_col].value_counts()
     keep = vc.nlargest(top_n).index
     df_plot = df.copy()
     df_plot[cat_col] = df_plot[cat_col].where(df_plot[cat_col].isin(keep), other='Other')
 
-    # 可选对数变换
+    # Optional log transformation
     if log_y:
         df_plot[num_col] = np.log1p(df_plot[num_col])
 
@@ -95,16 +95,16 @@ def plot_categorical_vs_numeric(
     else:
         sns.boxplot(data=df_plot, x=cat_col, y=num_col, order=sorted(df_plot[cat_col].unique()))
 
-    # 绘制每类的聚合统计条（均值或中位数）
+    # Plot aggregated stat bar for each category (mean or median)
     agg_func = 'median' if agg == 'median' else 'mean'
     stats = df_plot.groupby(cat_col)[num_col].agg(agg_func).reindex(sorted(df_plot[cat_col].unique()))
-    # 在次坐标系绘制条形（透明）
+    # Plot bars on a secondary axis (transparent)
     ax = plt.gca()
     ax2 = ax.twinx()
     x_positions = np.arange(len(stats))
     ax2.bar(x_positions, stats.values, alpha=0.15, width=0.6)
     ax2.set_ylim(ax.get_ylim())
-    ax2.set_yticks([])  # 不显示右侧刻度
+    ax2.set_yticks([])  # Do not display right-side ticks
     ax.set_title(f'{cat_col} vs {num_col} (top {top_n} + Other)')
     if rotate_xticks:
         plt.xticks(rotation=45, ha='right')
@@ -123,9 +123,9 @@ def plot_numeric_vs_numeric(
     alpha: float = 0.5
 ):
     """
-    数值 vs 数值 的可视化
-    - kind: scatter (散点), hex (六边箱/密度), reg (带回归线)
-    - sample_frac: 采样比例（例如 0.2）
+    Visualization for numeric vs numeric
+    - kind: scatter, hex (hexbin/density), reg (with regression line)
+    - sample_frac: Sampling fraction (e.g., 0.2)
     """
     df_plot = df.copy()
     if sample_frac is not None and 0 < sample_frac < 1:

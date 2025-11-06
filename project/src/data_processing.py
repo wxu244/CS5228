@@ -41,8 +41,6 @@ def process_flat_type(df: pd.DataFrame) -> pd.DataFrame:
     df['FLAT_TYPE'] = df['FLAT_TYPE'].str.replace('-', '_', regex=False)
     df['FLAT_TYPE'] = df['FLAT_TYPE'].str.replace(' ', '_', regex=False)
     df['FLAT_TYPE_ORIGINAL'] = df['FLAT_TYPE']
-    # 也可以用label encoding
-    # df = pd.get_dummies(df, columns=['FLAT_TYPE'], dtype=int)
     label_encoder = LabelEncoder()
     df['FLAT_TYPE'] = label_encoder.fit_transform(df['FLAT_TYPE'])
     return df
@@ -59,17 +57,6 @@ def calculate_floor(df: pd.DataFrame) -> pd.DataFrame:
 
 def engineer_flat_model_group(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # df['FLAT_MODEL_GROUPED'] = df['FLAT_MODEL'].map(FLAT_MODEL_MAPPING).fillna('Other')
-
-    # 0:按均值分类的(data leak)
-    # if df.get('RESALE_PRICE') is not None:
-    #     group_stats = df.groupby('FLAT_MODEL_GROUPED').agg(
-    #         count=('RESALE_PRICE', 'size'),
-    #         mean_price=('RESALE_PRICE', 'mean'),
-    #         median_price=('RESALE_PRICE', 'median'),
-    #         mean_area=('FLOOR_AREA_SQM', 'mean')
-    #     ).sort_values('mean_price')
-    #     print(group_stats)
-    # df['FLAT_MODEL_ENCODED'] = le.fit_transform(df['FLAT_MODEL_GROUPED'])
 
     # 1:label encode
     # le = LabelEncoder()
