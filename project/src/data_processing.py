@@ -63,7 +63,7 @@ def engineer_flat_model_group(train_df: pd.DataFrame, test_df: pd.DataFrame) -> 
     # df['FLAT_MODEL_ENCODED'] = le.fit_transform(df['FLAT_MODEL'])
 
     # 2:target encode
-    # 如果存在 RESALE_PRICE 列，对 RESALE_PRICE 进行对数转换
+    # transfrom the resale_price using log if it exists
     if 'RESALE_PRICE' in train_df.columns:
         train_df['LOG_RESALE_PRICE'] = np.log1p(train_df['RESALE_PRICE'])
 

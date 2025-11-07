@@ -29,10 +29,10 @@ FLAT_MODEL_MAPPING: dict = {
     'type s2': 'Suite',
 }
 
-# 数值特征
+# config of numerical features
 NUMERICAL_FEATURES = ['YEAR', 'FLOOR', 'AGE', 'FLOOR_AREA_SQM', 'RESALE_PRICE']
 
-# 类别特征
+# config of categorical features
 CATEGORICAL_FEATURES = ['TOWN', 'FLAT_TYPE_ORIGINAL', 'FLAT_MODEL']
 
 AUX_FILE_NAMES = [
@@ -40,5 +40,5 @@ AUX_FILE_NAMES = [
     'sg-primary-schools', 'sg-secondary-schools', 'sg-shopping-malls'
 ]
 
-# 绘图配置
+# config of data visualization
 TOP_N_CATEGORIES = 15
