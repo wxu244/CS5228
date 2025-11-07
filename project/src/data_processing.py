@@ -41,8 +41,6 @@ def process_flat_type(df: pd.DataFrame) -> pd.DataFrame:
     df['FLAT_TYPE'] = df['FLAT_TYPE'].str.replace('-', '_', regex=False)
     df['FLAT_TYPE'] = df['FLAT_TYPE'].str.replace(' ', '_', regex=False)
     df['FLAT_TYPE_ORIGINAL'] = df['FLAT_TYPE']
-    # 也可以用label encoding
-    # df = pd.get_dummies(df, columns=['FLAT_TYPE'], dtype=int)
     label_encoder = LabelEncoder()
     df['FLAT_TYPE'] = label_encoder.fit_transform(df['FLAT_TYPE'])
     return df
@@ -60,17 +58,6 @@ def calculate_floor(df: pd.DataFrame) -> pd.DataFrame:
 def engineer_flat_model_group(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # df['FLAT_MODEL_GROUPED'] = df['FLAT_MODEL'].map(FLAT_MODEL_MAPPING).fillna('Other')
 
-    # 0:按均值分类的(data leak)
-    # if df.get('RESALE_PRICE') is not None:
-    #     group_stats = df.groupby('FLAT_MODEL_GROUPED').agg(
-    #         count=('RESALE_PRICE', 'size'),
-    #         mean_price=('RESALE_PRICE', 'mean'),
-    #         median_price=('RESALE_PRICE', 'median'),
-    #         mean_area=('FLOOR_AREA_SQM', 'mean')
-    #     ).sort_values('mean_price')
-    #     print(group_stats)
-    # df['FLAT_MODEL_ENCODED'] = le.fit_transform(df['FLAT_MODEL_GROUPED'])
-
     # 1:label encode
     # le = LabelEncoder()
     # df['FLAT_MODEL_ENCODED'] = le.fit_transform(df['FLAT_MODEL'])
@@ -80,24 +67,23 @@ def engineer_flat_model_group(train_df: pd.DataFrame, test_df: pd.DataFrame) -> 
     if 'RESALE_PRICE' in train_df.columns:
         train_df['LOG_RESALE_PRICE'] = np.log1p(train_df['RESALE_PRICE'])
 
-    # 使用目标编码
     target_column = 'LOG_RESALE_PRICE' if 'LOG_RESALE_PRICE' in train_df.columns else 'RESALE_PRICE'
     target_mean = train_df.groupby('FLAT_MODEL')[target_column].transform('mean')
 
-    # 将目标编码的结果保存到新列
+    # save the result
     train_df['FLAT_MODEL_ENCODED'] = target_mean
 
-    # 将目标编码的结果保存到字典中
+    # save the encoding_map
     target_encoding_map = train_df.groupby('FLAT_MODEL')['FLAT_MODEL_ENCODED'].first().to_dict()
 
-    # 应用目标编码到测试集
+    # apply the data into test set
     test_df['FLAT_MODEL_ENCODED'] = test_df['FLAT_MODEL'].map(target_encoding_map)
 
-    # 处理测试集中未出现在训练集中的类别
+    # deal with unknown value
     unknown_value = train_df['FLAT_MODEL_ENCODED'].mean()  # 使用训练集的平均值作为未知类别的默认值
     test_df['FLAT_MODEL_ENCODED'].fillna(unknown_value, inplace=True)
 
-    # 如果需要，可以将对数转换后的列删除
+    # delete the column of log_resale_price
     if 'LOG_RESALE_PRICE' in train_df.columns:
         train_df.drop(columns=['LOG_RESALE_PRICE'], inplace=True)
 
@@ -157,11 +143,11 @@ def engineer_flat_model_group_3(df: pd.DataFrame) -> pd.DataFrame:
         'terrace': 'premium'
     }
 
-    # 人为划分特征并进行LabelEncoder编码
+    # label encoding with setted config
     le_structure = LabelEncoder()
     le_quality = LabelEncoder()
 
-    # 对训练集进行处理
+    # process the data set
     df['structure_type'] = df['FLAT_MODEL'].str.lower().map(structure_map)
     df['quality_level'] = df['FLAT_MODEL'].str.lower().map(quality_map)
     df['structure_type_encoded'] = le_structure.fit_transform(df['structure_type'])

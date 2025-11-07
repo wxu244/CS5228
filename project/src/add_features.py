@@ -4,18 +4,18 @@ import numpy as np
 from pathlib import Path
 from sklearn.neighbors import BallTree
 
-R_KM = 6371  # 地球半径（km）
+R_KM = 6371  # Earth's radius in kilometers (km)
 
 # ------------------------------------------------------------------
-# 工具函数
+# Utility Functions
 # ------------------------------------------------------------------
 def add_location_features(df: pd.DataFrame,
                           ref_df: pd.DataFrame,
                           prefix: str,
                           radius_km: float = 1.0) -> pd.DataFrame:
     """
-    通用空间特征生成器：最近距离 & radius_km 内个数
-    ref_df 必须含 LATITUDE / LONGITUDE
+    Generic spatial feature generator: nearest distance & count within radius_km
+    ref_df must contain LATITUDE / LONGITUDE
     """
     ref_df = ref_df.dropna(subset=["LATITUDE", "LONGITUDE"])
     if ref_df.empty:
@@ -45,7 +45,7 @@ def add_location_features(df: pd.DataFrame,
 
 
 def add_floor_position(df: pd.DataFrame) -> pd.DataFrame:
-    """FLOOR_POSITION = FLOOR / MAX_FLOOR，范围 [0,1]"""
+    """FLOOR_POSITION = FLOOR / MAX_FLOOR, range [0,1]"""
     df = df.copy()
     df["FLOOR_POSITION"] = np.nan
     mask = df[["FLOOR", "MAX_FLOOR"]].notna().all(axis=1) & (df["MAX_FLOOR"] > 0)
@@ -56,7 +56,7 @@ def add_floor_position(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------
-# 主封装函数
+# Main Wrapper Function
 # ------------------------------------------------------------------
 def main(train_path: Path ,
          test_path: Path ,
@@ -65,12 +65,12 @@ def main(train_path: Path ,
          out_test: Path ,
          radius_km: float = 1.0):
     """
-    读取原始文件 → 加空间特征 + FLOOR_POSITION → 保存结果
-    所有路径均可外部传入
+    Read raw files -> Add spatial features + FLOOR_POSITION -> Save results
+    All paths can be passed in externally
     """
     aux = Path(aux_dir)
 
-    # 1. 读取
+    # 1. Read data
     train = pd.read_csv(train_path)
     test = pd.read_csv(test_path)
 
@@ -80,36 +80,36 @@ def main(train_path: Path ,
         "primary_school": pd.read_csv(aux / "sg-primary-schools.csv"),
         "secondary_school": pd.read_csv(aux / "sg-secondary-schools.csv"),
         "mall": pd.read_csv(aux / "sg-shopping-malls.csv"),
-        # HDB 坐标
+        # HDB coordinates
         "block": pd.read_csv(aux / "sg-hdb-block-details.csv")[
             ["TOWN", "BLOCK", "LATITUDE", "ADDRESS", "LONGITUDE", "MAX_FLOOR"]
         ],
     }
 
-    # 2. 合并坐标 & MAX_FLOOR —— 只 pop 一次
+    # 2. Merge coordinates & MAX_FLOOR -- pop only once
     block_coords = landmarks.pop("block")
     block_coords.rename(columns={'ADDRESS': 'STREET'}, inplace=True)
     train = train.merge(block_coords, on=['TOWN', 'BLOCK', 'STREET'], how='left')
     test = test.merge(block_coords, on=['TOWN', 'BLOCK', 'STREET'], how='left')
 
-    # 3. 加空间特征
+    # 3. Add spatial features
     for prefix, ref in landmarks.items():
         print(f"Processing {prefix} ...")
         train = add_location_features(train, ref, prefix, radius_km=radius_km)
         test = add_location_features(test, ref, prefix, radius_km=radius_km)
 
-    # 4. 加楼层相对位置
+    # 4. Add relative floor position
     train = add_floor_position(train)
     test = add_floor_position(test)
 
-    # 5. 保存
+    # 5. Save
     train.to_csv(out_train, index=False, float_format="%.6f")
     test.to_csv(out_test, index=False, float_format="%.6f")
     print(f"✅ Saved → {out_train}  &  {out_test}")
 
 
 # ------------------------------------------------------------------
-# 只有当脚本被直接运行时才会触发 main()
+# Trigger main() only when the script is run directly
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     main()
