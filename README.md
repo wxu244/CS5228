@@ -41,8 +41,6 @@ project/
 │   ├── optimize_xgboost.py        # Final optimized model training and prediction
 │   └── visualization.py           # Exploratory data analysis and visualization
 │
-├── project-report-templates/      # Report templates for the project submission
-├── example-submission.csv         # Example output format for Kaggle-style submission
 └── README.md
 ```
 
