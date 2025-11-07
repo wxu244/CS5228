@@ -6,7 +6,7 @@ from openpyxl.styles.builtins import output
 
 
 import add_features, model_train
-from project.src import catboost_model_all
+# from project.src import catboost_model_all
 from project.src.data_processing import *
 from project.src.visualization import *
 
@@ -35,6 +35,7 @@ def main():
 
     # catboost_model_all.main(output_dir)
     model_train.main(output_dir)
+    
 
 if __name__ == "__main__":
     main()

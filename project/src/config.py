@@ -1,3 +1,4 @@
+# the original flat_model_mapping(abandoned)
 FLAT_MODEL_MAPPING: dict = {
     '2 room': 'Small',
     'new generation': 'Small',
